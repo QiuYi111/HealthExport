@@ -23,10 +23,6 @@ struct HealthExportApp: App {
         .backgroundTask(.appRefresh("com.healthexport.webhook.refresh")) {
             await handleBackgroundRefresh()
         }
-        .onAppear {
-            // Schedule the first background refresh on app launch
-            scheduleBackgroundRefresh()
-        }
     }
 
     // MARK: - Foreground Handler
