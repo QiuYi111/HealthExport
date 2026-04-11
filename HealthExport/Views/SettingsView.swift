@@ -1,214 +1,222 @@
 import SwiftUI
-
-import Combine
-
 import UIKit
-
-import UniformTypeIdentifiers
-
-import QuickLook
-
-import WidgetKit
-
-#if os can import BackgroundTasks
-import UserNotifications
-#endif
-
-import SwiftUI
-
-import UniformTypeIdentifiers
-
-import UserNotifications
-import Combine
-
-import UIKit
-import UniformTypeIdentifiers
-import QuickLook
-import WidgetKit
-import SwiftUI
-import UniformTypeIdentifiers
-import UserNotifications
-import Combine
-import UniformTypeIdentifiers
-
-import SwiftUI
-import UniformTypeIdentifiers
-
-import SwiftUI
-import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @EnvironmentObject private var settingsManager: SettingsManager
     @EnvironmentObject private var healthKitService: HealthKitService
     @Environment(\.dismiss) private var dismiss
-
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var showingExportSheet = false
     @State private var showingSuccessAlert = false
+    @State private var showingExportPathPicker = false
     @State private var exportMessage = ""
     @State private var isExporting = false
-    @State private var exportedFilesCount = 0
+    @State private var isTestingWebhook = false
+    @State private var isRetryingQueue = false
 
     var body: some View {
         NavigationStack {
-                List {
-                    Section {
-                        Toggle(isOn: $settingsManager.settings.autoSync) {
-                            Label("Auto Sync", systemImage: "arrow.triangle.2.icloud")
-                        }
+            List {
+                Section {
+                    Toggle("Sleep Data", isOn: $settingsManager.settings.syncSleep)
+                        .tint(Color.sleep)
+                    Toggle("Heart Rate", isOn: $settingsManager.settings.syncHeartRate)
+                        .tint(Color.heartRate)
+                    Toggle("Steps", isOn: $settingsManager.settings.syncSteps)
+                        .tint(Color.steps)
+                    Toggle("Active Energy", isOn: $settingsManager.settings.syncActiveEnergy)
+                        .tint(Color.activeEnergy)
+                    Toggle("Blood Oxygen", isOn: $settingsManager.settings.syncBloodOxygen)
+                        .tint(Color.pink)
+                    Toggle("Respiratory Rate", isOn: $settingsManager.settings.syncRespiratoryRate)
+                        .tint(Color.teal)
+                    Toggle("Exercise Time", isOn: $settingsManager.settings.syncExerciseTime)
+                        .tint(Color.green)
+                    Toggle("Distance", isOn: $settingsManager.settings.syncDistance)
+                        .tint(Color.blue)
+                } header: {
+                    Text("Data Types")
+                } footer: {
+                    Text("Select which health metrics to include in exports")
+                }
 
-                        if settingsManager.settings.autoSync {
-                            Text("Automatically sync health data to iCloud Drive when new data is available")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
+                Section {
+                    HStack {
+                        Text("Export Path")
+                        Spacer()
+                        Text(ExportService.shared.exportPathDisplayName)
+                            .foregroundStyle(.secondary)
+                            .font(.subheadline)
+                            .lineLimit(1)
+                    }
+                    Button {
+                        showingExportPathPicker = true
+                    } label: {
+                        Label("Change Export Path", systemImage: "folder.badge.plus")
+                    }
+                } header: {
+                    Text("Export Location")
+                } footer: {
+                    Text("Choose a folder to store exported health data, including iCloud Drive")
+                }
+
+                // MARK: - Webhook Section
+                Section {
+                    Toggle("Enable Webhook", isOn: $settingsManager.settings.webhookEnabled)
+                        .tint(.blue)
+
+                    if settingsManager.settings.webhookEnabled {
+                        TextField("Webhook URL", text: Binding(
+                            get: { settingsManager.settings.webhookURL ?? "" },
+                            set: { settingsManager.settings.webhookURL = $0.isEmpty ? nil : $0 }
+                        ))
+                        .textFieldStyle(.roundedBorder)
+                        .autocapitalization(.none)
+                        .keyboardType(.URL)
+                        .font(.subheadline)
+
+                        Stepper(
+                            "Interval: \(settingsManager.settings.webhookSyncInterval) min",
+                            value: $settingsManager.settings.webhookSyncInterval,
+                            in: 5...240,
+                            step: 5
+                        )
 
                         Button {
-                            Task {
-                                await toggleAutoSync()
-                            }
+                            Task { await testWebhook() }
                         } label: {
-                            Label("Sync Now", systemImage: "arrow.clockwise.icloud")
-                        }
-                        .disabled(isExporting)
-                    } footer: {
-                        Text("Auto Sync uses iCloud Drive to store your health data")
-                    }
-
-                    Section {
-                        // iCloud status
-                        HStack {
-                            Text("iCloud Status")
-                            Spacer()
-                            if let url = ExportService.shared.iCloudContainerURL {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(.green)
-                                Text("Connected")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            } else {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundStyle(.orange)
-                                Text("Not Available")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    } header: {
-                        Text("iCloud Drive")
-                    } footer: {
-                        Text("Sign in to iCloud and enable iCloud Drive in Settings to use this feature")
-                    }
-
-                    Section {
-                        // Data Types to Sync
-                        Toggle("Sleep Data", isOn: $settingsManager.settings.syncSleep)
-                            .tint(Color.sleep)
-
-                        Toggle("Heart Rate", isOn: $settingsManager.settings.syncHeartRate)
-                            .tint(Color.heartRate)
-
-                        Toggle("Steps", isOn: $settingsManager.settings.syncSteps)
-                            .tint(Color.steps)
-
-                        Toggle("Active Energy", isOn: $settingsManager.settings.syncActiveEnergy)
-                            .tint(Color.activeEnergy)
-                    } header: {
-                        Text("Data Types")
-                    } footer: {
-                        Text("Select which health metrics to include in exports")
-                    }
-
-                    Section {
-                        // Export Actions
-                        Button {
-                            showingExportSheet = true
-                        } label: {
-                            Label("Preview Export", systemImage: "doc.text")
-                        }
-
-                        Button {
-                            Task {
-                                await exportToiCloud()
-                            }
-                        } label: {
-                            if isExporting {
+                            if isTestingWebhook {
                                 ProgressView()
-                                    .scaleEffect(.circular)
                             } else {
-                                Label("Export to iCloud", systemImage: "arrow.up.icloud")
+                                Label("Test Webhook", systemImage: "antenna.radiowaves.left.and.right")
                             }
                         }
-                    } header: {
-                        Text("Manual Actions")
-                    }
+                        .disabled(settingsManager.settings.webhookURL == nil || settingsManager.settings.webhookURL!.isEmpty)
 
-                    Section {
-                        // Exported files
-                        let files = ExportService.shared.listExportedFiles()
+                        HStack {
+                            Text("Pending")
+                            Spacer()
+                            Text("\(WebhookService.shared.pendingCount)")
+                                .foregroundStyle(WebhookService.shared.pendingCount > 0 ? .orange : .secondary)
+                        }
 
-                        if files.isEmpty {
-                            Text("No exported files yet")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            ForEach(files.prefix(3)) { file in
-                                HStack {
-                                    Image(systemName: "doc.text.fill")
-                                        .foregroundStyle(.blue)
+                        if let last = WebhookService.shared.lastSuccessDate ?? settingsManager.settings.lastWebhookSuccessDate {
+                            HStack {
+                                Text("Last Sent")
+                                Spacer()
+                                Text(last, style: .relative)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
 
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(file.lastPathComponent)
-                                            .font(.subheadline)
-
-                                        Text(file.creationDate?.formatted(date: .medium, style: .short) ?? "")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-
-                                    Spacer()
-
-                                    if let date = file.creationDate {
-                                        Text(date.formatted(date: .short))
-                                            .font(.caption)
-                                            .foregroundStyle(.tertiary)
-                                    }
+                        if WebhookService.shared.pendingCount > 0 {
+                            Button {
+                                Task { await retryQueue() }
+                            } label: {
+                                if isRetryingQueue {
+                                    ProgressView()
+                                } else {
+                                    Label("Retry Queue (\(WebhookService.shared.pendingCount))", systemImage: "arrow.clockwise")
                                 }
                             }
+
+                            Button(role: .destructive) {
+                                WebhookService.shared.clearQueue()
+                            } label: {
+                                Label("Clear Queue", systemImage: "trash")
+                            }
                         }
-                    } header: {
-                        Text("Exported Files")
-                    } footer: {
-                        Text("Files are stored in iCloud Drive > health/ folder")
+                    }
+                } header: {
+                    Text("Webhook")
+                } footer: {
+                    Text("Automatically send health data to your webhook URL when data updates or on a schedule")
+                }
+
+                Section {
+                    Button {
+                        showingExportSheet = true
+                    } label: {
+                        Label("Preview Export", systemImage: "doc.text")
                     }
 
-                    Section {
-                        // App Info
-                        HStack {
-                            Text("Version")
-                            Spacer()
-                            Text("1.0.0")
+                    Button {
+                        Task { await exportNow() }
+                    } label: {
+                        if isExporting {
+                            ProgressView()
+                        } else {
+                            Label("Export Now", systemImage: "arrow.down.doc")
+                        }
+                    }
+                } header: {
+                    Text("Manual Actions")
+                }
+
+                Section {
+                    let dates = ExportService.shared.listDatesWithFileCount()
+                    if dates.isEmpty {
+                        Text("No exported files yet")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(dates.prefix(5), id: \.date) { item in
+                            HStack {
+                                Image(systemName: "folder.fill")
+                                    .foregroundStyle(.blue)
+                                Text(item.date)
+                                    .font(.subheadline)
+                                Spacer()
+                                Text("\(item.count) files")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Exported Files")
+                } footer: {
+                    if settingsManager.settings.exportDirectoryBookmark != nil {
+                        Text("Files are saved to your chosen export path")
+                    } else {
+                        Text("Visible in Files app > On My iPhone > HealthExport")
+                    }
+                }
+
+                Section {
+                    HStack {
+                        Text("Version")
+                        Spacer()
+                        Text("1.1.0")
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Text("HealthKit")
+                        Spacer()
+                        Text(healthKitService.isAuthorized ? "Authorized" : "Not Authorized")
+                            .foregroundStyle(healthKitService.isAuthorized ? .green : .orange)
+                    }
+                    HStack {
+                        Text("Last Auto Export")
+                        Spacer()
+                        if let last = healthKitService.lastAutoExportDate {
+                            Text(last, style: .time)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Never")
                                 .foregroundStyle(.secondary)
                         }
-
-                        // Authorization Status
-                        HStack {
-                            Text("HealthKit Status")
-                            Spacer()
-                            Text(healthKitService.isAuthorized ? "Authorized" : "Not Authorized")
-                                .foregroundStyle(healthKitService.isAuthorized ? .green : .orange)
-                        }
-                    } header: {
-                        Text("About")
                     }
+                } header: {
+                    Text("Status")
+                }
 
-                    Section {
-                        Button(role: .destructive) {
-                            settingsManager.reset()
-                        } label: {
-                            Text("Reset All Settings")
-                                .frame(maxWidth: .infinity)
-                        }
+                Section {
+                    Button(role: .destructive) {
+                        settingsManager.reset()
+                    } label: {
+                        Text("Reset All Settings")
+                            .frame(maxWidth: .infinity)
                     }
                 }
             }
@@ -217,83 +225,49 @@ struct SettingsView: View {
             .sheet(isPresented: $showingExportSheet) {
                 ExportSheetView()
             }
-            .alert("Export Successful", isPresented: $showingSuccessAlert) {
+            .sheet(isPresented: $showingExportPathPicker) {
+                DocumentPickerView { url in
+                    ExportService.shared.saveExportDirectory(url)
+                }
+            }
+            .alert("Export", isPresented: $showingSuccessAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text(exportMessage)
             }
         }
     }
-    .task {
-        await loadExportedFiles()
-    }
-    .onAppear {
-        Task {
-            await loadExportedFiles()
-        }
-    }
-    .onChange(of: scenePhase) {
-        if scenePhase == .active {
-            Task {
-                await loadExportedFiles()
-            }
-        }
-    }
-    private func loadExportedFiles() {
-        exportedFilesCount = ExportService.shared.listExportedFiles().count
-    }
 
-    private func toggleAutoSync() async {
-        if settingsManager.settings.autoSync {
-            do {
-                try await healthKitService.enableBackgroundDelivery()
-                await MainActor.run {
-                    exportMessage = "Auto Sync enabled. Health data will sync to iCloud Drive automatically."
-                    showingSuccessAlert = true
-                }
-            } catch {
-                settingsManager.settings.autoSync = false
-                await MainActor.run {
-                    exportMessage = "Failed to enable Auto Sync: \(error.localizedDescription)"
-                    showingSuccessAlert = true
-                }
-            }
-        } else {
-            do {
-                try await healthKitService.disableBackgroundDelivery()
-                await MainActor.run {
-                    exportMessage = "Auto Sync disabled."
-                    showingSuccessAlert = true
-                }
-            } catch {
-                await MainActor.run {
-                    exportMessage = "Failed to disable Auto Sync: \(error.localizedDescription)"
-                    showingSuccessAlert = true
-                }
-            }
-        }
-    }
-
-    private func exportToiCloud() async {
+    private func exportNow() async {
         isExporting = true
-
         do {
             let healthData = try await healthKitService.fetchAllData()
-            let fileURL = try await ExportService.shared.exportToiCloud(healthData)
-
-            await MainActor.run {
-                exportMessage = "Health data exported to iCloud Drive:\ \(fileURL.lastPathComponent)"
-                showingSuccessAlert = true
-                exportedFilesCount = ExportService.shared.listExportedFiles().count
-            }
+            let fileURL = try ExportService.shared.exportIncremental(healthData)
+            exportMessage = "Saved: \(fileURL.lastPathComponent)"
+            showingSuccessAlert = true
         } catch {
-            await MainActor.run {
-                exportMessage = "Export failed: \(error.localizedDescription)"
-                showingSuccessAlert = true
-            }
+            exportMessage = "Export failed: \(error.localizedDescription)"
+            showingSuccessAlert = true
         }
-
         isExporting = false
+    }
+
+    private func testWebhook() async {
+        isTestingWebhook = true
+        do {
+            try await WebhookService.shared.testWebhook()
+            exportMessage = "Webhook test successful!"
+        } catch {
+            exportMessage = "Webhook test failed: \(error.localizedDescription)"
+        }
+        showingSuccessAlert = true
+        isTestingWebhook = false
+    }
+
+    private func retryQueue() async {
+        isRetryingQueue = true
+        await WebhookService.shared.retryPendingPayloads()
+        isRetryingQueue = false
     }
 }
 
@@ -304,63 +278,53 @@ struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var jsonOutput: String = ""
     @State private var isSharing = false
-
-    @State private var isExportingToiCloud = false
+    @State private var shareURL: URL?
 
     var body: some View {
         NavigationStack {
-                ScrollView {
-                    VStack(spacing: 20) {
-                        if jsonOutput.isEmpty {
-                            ProgressView("Generating export...")
-                                .padding()
-                        } else {
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text("Export Preview")
-                                    .font(.headline)
-
-                                ScrollView {
-                                    Text(jsonOutput)
-                                        .font(.system(.caption, design: .monospaced))
-                                        .foregroundStyle(.secondary)
-                                        .padding()
+            ScrollView {
+                VStack(spacing: 20) {
+                    if jsonOutput.isEmpty {
+                        ProgressView("Generating export...")
+                            .padding()
+                    } else {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Export Preview")
+                                .font(.headline)
+                            ScrollView {
+                                Text(jsonOutput)
+                                    .font(.system(.caption, design: .monospaced))
+                                    .foregroundStyle(.secondary)
+                                    .padding()
+                            }
+                            .frame(maxHeight: 300)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.secondarySystemGroupedBackground))
+                            )
+                            HStack(spacing: 12) {
+                                Button {
+                                    UIPasteboard.general.string = jsonOutput
+                                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                                } label: {
+                                    Label("Copy", systemImage: "doc.on.doc")
+                                        .frame(maxWidth: .infinity)
                                 }
-                                .frame(maxHeight: 300)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(.secondarySystemGroupedBackground))
-                                )
-
-                                HStack(spacing: 12) {
-                                    Button {
-                                        copyToClipboard()
-                                    } label: {
-                                        Label("Copy", systemImage: "doc.on.doc")
-                                            .frame(maxWidth: .infinity)
-                                    }
-                                    .buttonStyle(.bordered)
-
-                                    Button {
-                                        shareJSON()
-                                    } label: {
-                                        Label("Share", systemImage: "square.and.arrow.up")
-                                            .frame(maxWidth: .infinity)
-                                    }
-                                    .buttonStyle(.bordered)
-
-                                    Button {
-                                        Task {
-                                            await exportToiCloudFromSheet()
-                                        }
-                                    } label: {
-                                        if isExportingToiCloud {
-                                            ProgressView()
-                                                .scaleEffect(.circular)
-                                        } else {
-                                            Label("Save to iCloud", systemImage: "arrow.up.icloud")
-                                        }
-                                    }
-                                    .buttonStyle(.borderedProminent)
+                                .buttonStyle(.bordered)
+                                Button {
+                                    shareJSON()
+                                } label: {
+                                    Label("Share", systemImage: "square.and.arrow.up")
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.bordered)
+                                Button {
+                                    Task { await exportToLocal() }
+                                } label: {
+                                    Label("Save", systemImage: "arrow.down.doc")
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(.borderedProminent)
                             }
                         }
                     }
@@ -371,17 +335,14 @@ struct ExportSheetView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
+                    Button("Done") { dismiss() }
                 }
             }
             .task {
                 await generateExport()
             }
             .sheet(isPresented: $isSharing) {
-                if let data = try? await healthKitService.fetchAllData(),
-                   let url = ExportService.shared.createShareFile(from: data) {
+                if let url = shareURL {
                     ShareSheet(activityItems: [url])
                 }
             }
@@ -397,29 +358,24 @@ struct ExportSheetView: View {
         }
     }
 
-    private func copyToClipboard() {
-        UIPasteboard.general.string = jsonOutput
-
-        // Haptic feedback
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(.success)
-    }
-
     private func shareJSON() {
-        isSharing = true
+        Task {
+            if let data = try? await healthKitService.fetchAllData(),
+               let url = ExportService.shared.createShareFile(from: data) {
+                shareURL = url
+                isSharing = true
+            }
+        }
     }
 
-    private func exportToiCloudFromSheet() async {
-        isExportingToiCloud = true
-
+    private func exportToLocal() async {
         do {
             let healthData = try await healthKitService.fetchAllData()
-            _ = try await ExportService.shared.exportToiCloud(healthData)
+            let fileURL = try ExportService.shared.exportIncremental(healthData)
+            jsonOutput = "Saved: \(fileURL.lastPathComponent)"
         } catch {
-            // Show error
+            jsonOutput = "Export failed: \(error.localizedDescription)"
         }
-
-        isExportingToiCloud = false
     }
 }
 
@@ -427,15 +383,11 @@ struct ExportSheetView: View {
 
 struct ShareSheet: UIViewControllerRepresentable {
     let activityItems: [Any]
-
     func makeUIViewController(context: Context) -> UIActivityViewController {
         UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
     }
-
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
-
-// MARK: - Preview
 
 #Preview {
     SettingsView()

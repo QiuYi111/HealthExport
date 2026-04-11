@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // MARK: - Main Health Data Model
 
@@ -6,8 +7,17 @@ struct HealthData: Codable {
     let date: String
     let sleep: SleepData?
     let heartRate: HeartRateData?
+    let oxygenSaturation: OxygenSaturationData?
+    let wristTemperature: WristTemperatureData?
+    let respiratoryRate: RespiratoryRateData?
     let steps: StepsData?
     let activeEnergy: ActiveEnergyData?
+    let distance: DistanceData?
+    let exerciseMinutes: ExerciseMinutesData?
+    let standMinutes: StandMinutesData?
+    let restingHeartRate: Double?
+    let walkingHeartRateAverage: WalkingHeartRateAverageData?
+    let heartRateVariability: HeartRateVariabilityData?
 }
 
 // MARK: - Sleep Data
@@ -18,23 +28,22 @@ struct SleepData: Codable, Identifiable {
     let stages: [SleepStage]
     let startDate: Date
     let endDate: Date
-    let efficiency: Double?
+    let efficiency: Double
+
+    var formattedDuration: String {
+        let hours = Int(totalDuration / 3600)
+        let minutes = Int((totalDuration.truncatingRemainder(dividingBy: 3600)) / 60)
+        return "\(hours)h \(minutes)m"
+    }
 
     var hoursAndMinutes: (hours: Int, minutes: Int) {
         let hours = Int(totalDuration / 3600)
         let minutes = Int((totalDuration.truncatingRemainder(dividingBy: 3600)) / 60)
         return (hours, minutes)
     }
-
-    var formattedDuration: String {
-        let (h, m) = hoursAndMinutes
-        return "\(h)h \(m)m"
-    }
-
-    enum CodingKeys: String, CodingKey {
-        case totalDuration, stages, startDate, endDate, efficiency
-    }
 }
+
+// MARK: - Sleep Stage
 
 struct SleepStage: Codable, Identifiable {
     let id = UUID()
@@ -45,17 +54,15 @@ struct SleepStage: Codable, Identifiable {
     var duration: TimeInterval {
         endDate.timeIntervalSince(startDate)
     }
-
-    var durationInMinutes: Int {
-        Int(duration / 60)
-    }
 }
 
+// MARK: - Sleep Stage Type
+
 enum SleepStageType: String, Codable, CaseIterable {
-    case awake = "awake"
-    case rem = "rem"
-    case core = "core"
-    case deep = "deep"
+    case awake
+    case rem
+    case core
+    case deep
 
     var displayName: String {
         switch self {
@@ -87,19 +94,112 @@ struct HeartRateData: Codable, Identifiable {
     let samples: [HeartRateSample]
     let date: Date
 
-    var formattedCurrent: String {
-        String(Int(currentBPM))
-    }
-
     var range: String {
         "\(Int(minBPM)) - \(Int(maxBPM))"
     }
 }
 
+// MARK: - Heart Rate Sample
+
 struct HeartRateSample: Codable, Identifiable {
     let id = UUID()
     let bpm: Double
     let date: Date
+}
+
+// MARK: - Heart Rate Variability
+
+struct HeartRateVariabilityData: Codable {
+    let samples: [HRVSample]
+    let date: Date
+
+    var average: Double {
+        guard !samples.isEmpty else { return 0 }
+        return samples.map(\.value).reduce(0, +) / Double(samples.count)
+    }
+
+    var formattedAverage: String {
+        String(format: "%.1f ms", average)
+    }
+}
+
+struct HRVSample: Codable, Identifiable {
+    let id = UUID()
+    let value: Double // ms
+    let date: Date
+}
+
+// MARK: - Oxygen Saturation
+
+struct OxygenSaturationData: Codable, Identifiable {
+    let id = UUID()
+    let percentage: Double
+    let minPercentage: Double
+    let maxPercentage: Double
+    let samples: [OxygenSaturationSample]
+    let date: Date
+
+    var formattedPercentage: String {
+        String(format: "%.0f%%", percentage * 100)
+    }
+}
+
+struct OxygenSaturationSample: Codable, Identifiable {
+    let id = UUID()
+    let percentage: Double
+    let date: Date
+}
+
+// MARK: - Wrist Temperature
+
+struct WristTemperatureData: Codable, Identifiable {
+    let id = UUID()
+    let temperature: Double // Celsius
+    let samples: [WristTemperatureSample]
+    let date: Date
+
+    var formattedTemperature: String {
+        String(format: "%.1f°C", temperature)
+    }
+}
+
+struct WristTemperatureSample: Codable, Identifiable {
+    let id = UUID()
+    let temperature: Double
+    let date: Date
+}
+
+// MARK: - Respiratory Rate
+
+struct RespiratoryRateData: Codable, Identifiable {
+    let id = UUID()
+    let rate: Double
+    let minRate: Double
+    let maxRate: Double
+    let samples: [RespiratoryRateSample]
+    let date: Date
+
+    var formattedRate: String {
+        String(format: "%.0f breaths/min", rate)
+    }
+}
+
+struct RespiratoryRateSample: Codable, Identifiable {
+    let id = UUID()
+    let rate: Double
+    let date: Date
+}
+
+// MARK: - Walking Heart Rate Average
+
+struct WalkingHeartRateAverageData: Codable, Identifiable {
+    let id = UUID()
+    let averageBPM: Double
+    let date: Date
+
+    var formattedBPM: String {
+        String(format: "%.0f BPM", averageBPM)
+    }
 }
 
 // MARK: - Steps Data
@@ -124,6 +224,19 @@ struct StepsData: Codable, Identifiable {
     }
 }
 
+// MARK: - Distance Data
+
+struct DistanceData: Codable, Identifiable {
+    let id = UUID()
+    let meters: Double
+    let date: Date
+
+    var formattedDistance: String {
+        let km = meters / 1000
+        return String(format: "%.2f km", km)
+    }
+}
+
 // MARK: - Active Energy Data
 
 struct ActiveEnergyData: Codable, Identifiable {
@@ -145,6 +258,41 @@ struct ActiveEnergyData: Codable, Identifiable {
     }
 }
 
+// MARK: - Exercise Minutes
+
+struct ExerciseMinutesData: Codable, Identifiable {
+    let id = UUID()
+    let minutes: Double
+    let goal: Double
+    let date: Date
+
+    var progress: Double {
+        minutes / goal
+    }
+
+    var progressPercentage: Int {
+        Int(min(progress * 100, 100))
+    }
+}
+
+// MARK: - Stand Minutes
+
+struct StandMinutesData: Codable, Identifiable {
+    let id = UUID()
+    let hours: Double
+    let goal: Double
+    let date: Date
+
+    var formattedHours: String {
+        String(format: "%.0f", hours)
+    }
+
+    var progressPercentage: Int {
+        let goal = self.goal > 0 ? self.goal : 12
+        return Int(min(hours / goal * 100, 100))
+    }
+}
+
 // MARK: - Export Payload
 
 struct ExportPayload: Codable {
@@ -157,6 +305,15 @@ struct ExportPayload: Codable {
         case timestamp
         case data
     }
+
+    static var deviceId: String {
+        var systemInfo = utsname()
+        return withUnsafeMutablePointer(to: &systemInfo) {
+            $0.withMemoryRebound(to: CChar.self, capacity: 1) {
+                String(cString: $0)
+            }
+        }
+    }
 }
 
 // MARK: - Helper Extensions
@@ -168,5 +325,3 @@ extension Int {
         return formatter.string(from: NSNumber(value: self)) ?? "\(self)"
     }
 }
-
-import SwiftUI

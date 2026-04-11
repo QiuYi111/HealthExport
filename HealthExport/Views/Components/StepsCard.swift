@@ -25,17 +25,12 @@ struct StepsCard: View {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(animatedCount.formattedWithCommas)
                             .font(.system(size: 48, weight: .bold, design: .rounded))
-                            .foregroundStyle(.steps)
-                            .contentTransition(
-                                numericValue: Double(animatedCount),
-                                from: 0,
-                                using: .spring(response: 0.6, dampingFraction: 0.7)
-                            )
+                            .foregroundStyle(Color.steps)
 
                         Spacer()
 
                         Text("/ \(data.goal.formattedWithCommas)")
-                            .font(.caption1)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                     }
 
@@ -61,15 +56,15 @@ struct StepsCard: View {
                             Text(String(format: "%.1f km", distance / 1000))
                                 .foregroundStyle(.secondary)
                         }
-                        .font(.caption1)
+                        .font(.caption)
                     }
                 }
             }
-            .onAppear {
-                withAnimation(.easeOut(duration: 0.6).delay(0.15)) {
-                    animateContent = true
-                    animatedCount = data.count
-                }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.15)) {
+                animateContent = true
+                animatedCount = data.count
             }
         }
     }
@@ -102,12 +97,7 @@ struct ActiveEnergyCard: View {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text("\(Int(animatedCalories))")
                             .font(.system(size: 48, weight: .bold, design: .rounded))
-                            .foregroundStyle(.activeEnergy)
-                            .contentTransition(
-                                numericValue: animatedCalories,
-                                from: 0,
-                                using: .spring(response: 0.6, dampingFraction: 0.7)
-                            )
+                            .foregroundStyle(Color.activeEnergy)
 
                         Text("CAL")
                             .font(.title3)
@@ -116,7 +106,7 @@ struct ActiveEnergyCard: View {
                         Spacer()
 
                         Text("/ \(Int(data.goal))")
-                            .font(.caption1)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                     }
 
@@ -138,16 +128,16 @@ struct ActiveEnergyCard: View {
                     HStack {
                         Spacer()
                         Text("\(data.progressPercentage)% of goal")
-                            .font(.caption1)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            .onAppear {
-                withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
-                    animateContent = true
-                    animatedCalories = data.calories
-                }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.2)) {
+                animateContent = true
+                animatedCalories = data.calories
             }
         }
     }

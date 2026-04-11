@@ -41,7 +41,7 @@ struct SleepDetailView: View {
             VStack(spacing: 8) {
                 Text(sleepData.formattedDuration)
                     .font(.system(size: 56, weight: .bold, design: .rounded))
-                    .foregroundStyle(.sleep)
+                    .foregroundStyle(Color.sleep)
 
                 Text("Total Sleep")
                     .font(.subheadline)
@@ -59,13 +59,14 @@ struct SleepDetailView: View {
                     .foregroundStyle(.secondary)
             }
 
-            // Efficiency if available
-            if let efficiency = sleepData.efficiency {
+            // Efficiency
+            let efficiency = sleepData.efficiency
+            if efficiency > 0 {
                 HStack(spacing: 12) {
                     VStack(spacing: 4) {
                         Text("\(Int(efficiency * 100))%")
                             .font(.title.bold())
-                            .foregroundStyle(.sleep)
+                            .foregroundStyle(Color.sleep)
                         Text("Efficiency")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -311,10 +312,10 @@ struct StatCard: View {
 
             Text(value)
                 .font(.title2.bold())
-                .foregroundStyle(.sleep)
+                .foregroundStyle(Color.sleep)
 
             Text(subtitle)
-                .font(.caption1)
+                .font(.caption)
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

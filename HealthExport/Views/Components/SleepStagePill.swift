@@ -13,11 +13,11 @@ struct SleepStagePill: View {
 
         VStack(alignment: .leading, spacing: 2) {
             Text(type.displayName)
-                .font(.caption2.bold)
+                .font(.caption2.bold())
                 .foregroundStyle(.primary)
 
             Text("\(duration) mins")
-                .font(.caption1)
+                .font(.caption)
                 .foregroundStyle(.secondary)
         }
 

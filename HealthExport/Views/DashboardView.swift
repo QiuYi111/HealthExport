@@ -9,21 +9,20 @@ struct DashboardView: View {
     @State private var showContent = false
     @State private var showingSettings = false
     @State private var showingExportSheet = false
+    @State private var isAuthorized = false
+    @State private var showingExportPathPicker = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Header
                     headerView
 
-                    // Authorization prompt if needed
-                    if !healthKitService.isAuthorized {
+                    if !isAuthorized {
                         authorizationCard
                     } else if isLoading {
                         loadingView
                     } else if let data = healthData {
-                        // Health data cards
                         cardsSection(data: data)
                     } else {
                         emptyStateView
@@ -63,9 +62,34 @@ struct DashboardView: View {
             .sheet(isPresented: $showingExportSheet) {
                 ExportSheetView()
             }
-            .task {
-                await loadData()
+            .sheet(isPresented: $showingExportPathPicker) {
+                DocumentPickerView { url in
+                    ExportService.shared.saveExportDirectory(url)
+                }
             }
+            .onAppear {
+                refreshAuthorization()
+            }
+            .onChange(of: healthKitService.isAuthorized) {
+                refreshAuthorization()
+            }
+            .task {
+                // Small delay to let onAppear/refreshAuthorization complete first
+                try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+                if isAuthorized {
+                    await loadData()
+                }
+            }
+        }
+    }
+
+    // MARK: - Authorization
+
+    private func refreshAuthorization() {
+        healthKitService.checkAuthorizationStatus()
+        isAuthorized = healthKitService.isAuthorized
+        if isAuthorized && healthData == nil {
+            Task { await loadData() }
         }
     }
 
@@ -81,12 +105,9 @@ struct DashboardView: View {
                 .font(.title2)
                 .foregroundStyle(.secondary)
 
-            // Date navigation
             HStack(spacing: 16) {
                 Button {
-                    Task {
-                        await changeDate(by: -1)
-                    }
+                    Task { await changeDate(by: -1) }
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.headline)
@@ -98,16 +119,13 @@ struct DashboardView: View {
                     .foregroundStyle(.secondary)
 
                 Button {
-                    Task {
-                        await changeDate(by: 1)
-                    }
+                    Task { await changeDate(by: 1) }
                 } label: {
                     Image(systemName: "chevron.right")
                         .font(.headline)
                         .foregroundStyle(
                             Calendar.current.isDateInToday(selectedDate)
-                                ? .tertiary
-                                : .secondary
+                                ? Color(.tertiarySystemFill) : Color.secondary
                         )
                 }
                 .disabled(Calendar.current.isDateInToday(selectedDate))
@@ -135,8 +153,19 @@ struct DashboardView: View {
 
             Button {
                 Task {
-                    try? await healthKitService.requestAuthorization()
-                    await loadData()
+                    do {
+                        let granted = try await healthKitService.requestAuthorization()
+                        if granted {
+                            isAuthorized = true
+                            await loadData()
+                            // Show export path picker after granting access
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                showingExportPathPicker = true
+                            }
+                        }
+                    } catch {
+                        print("Authorization error: \(error)")
+                    }
                 }
             } label: {
                 Text("Grant Access")
@@ -196,7 +225,6 @@ struct DashboardView: View {
     @ViewBuilder
     private func cardsSection(data: HealthData) -> some View {
         VStack(spacing: 16) {
-            // Sleep Card
             if let sleep = data.sleep {
                 NavigationLink {
                     SleepDetailView(sleepData: sleep)
@@ -206,17 +234,14 @@ struct DashboardView: View {
                 .buttonStyle(.plain)
             }
 
-            // Heart Rate Card
             if let heartRate = data.heartRate {
                 HeartRateCard(data: heartRate)
             }
 
-            // Steps Card
             if let steps = data.steps {
                 StepsCard(data: steps)
             }
 
-            // Active Energy Card
             if let activeEnergy = data.activeEnergy {
                 ActiveEnergyCard(data: activeEnergy)
             }
@@ -240,26 +265,22 @@ struct DashboardView: View {
     // MARK: - Actions
 
     private func loadData() async {
-        guard healthKitService.isAuthorized else { return }
+        guard isAuthorized else { return }
 
         isLoading = true
         showContent = false
 
         do {
             let data = try await healthKitService.fetchAllData(for: selectedDate)
-            await MainActor.run {
-                healthData = data
-                isLoading = false
+            healthData = data
+            isLoading = false
 
-                withAnimation(.easeOut(duration: 0.3).delay(0.1)) {
-                    showContent = true
-                }
+            withAnimation(.easeOut(duration: 0.3).delay(0.1)) {
+                showContent = true
             }
         } catch {
             print("Error loading data: \(error)")
-            await MainActor.run {
-                isLoading = false
-            }
+            isLoading = false
         }
     }
 
@@ -271,7 +292,42 @@ struct DashboardView: View {
     }
 }
 
-// MARK: - Preview
+// MARK: - Document Picker View
+
+struct DocumentPickerView: UIViewControllerRepresentable {
+    let onPick: (URL) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.folder], asCopy: false)
+        picker.delegate = context.coordinator
+        picker.allowsMultipleSelection = false
+        picker.shouldShowFileExtensions = true
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onPick: onPick, dismiss: dismiss)
+    }
+
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let onPick: (URL) -> Void
+        let dismiss: DismissAction
+
+        init(onPick: @escaping (URL) -> Void, dismiss: DismissAction) {
+            self.onPick = onPick
+            self.dismiss = dismiss
+        }
+
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            guard let url = urls.first else { return }
+            onPick(url)
+            dismiss()
+        }
+    }
+}
 
 #Preview {
     DashboardView()

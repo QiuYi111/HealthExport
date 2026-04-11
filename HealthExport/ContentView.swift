@@ -14,6 +14,17 @@ struct ContentView: View {
         .onAppear {
             healthKitService.checkAuthorizationStatus()
         }
+        .onChange(of: healthKitService.isAuthorized) {
+            if healthKitService.isAuthorized {
+                healthKitService.setupObservers()
+                Task { try? await healthKitService.fetchAndAutoExport() }
+            }
+        }
+        .task {
+            guard healthKitService.isAuthorized else { return }
+            healthKitService.setupObservers()
+            try? await healthKitService.fetchAndAutoExport()
+        }
     }
 }
 
@@ -39,8 +50,6 @@ struct UnavailableView: View {
         .padding()
     }
 }
-
-// MARK: - Preview
 
 #Preview {
     ContentView()

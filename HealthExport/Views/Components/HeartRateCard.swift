@@ -23,57 +23,51 @@ struct HeartRateCard: View {
                 VStack(alignment: .leading, spacing: 12) {
                     // Main BPM display
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                                Text("\(Int(currentBPM))")
-                                    .font(.system(size: 56, weight: .bold, design: .rounded))
-                                    .foregroundStyle(.heartRate)
-                                    .contentTransition(
-                                        numericValue: currentBPM,
-                                        from: 0,
-                                        using: .spring(response: 0.5, dampingFraction: 0.7)
-                                    )
+                        Text("\(Int(currentBPM))")
+                            .font(.system(size: 56, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.heartRate)
 
-                                Text("BPM")
-                                    .font(.caption1)
-                                    .foregroundStyle(.secondary)
-                                    .padding(.leading, 4)
-                            }
+                        Text("BPM")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, 4)
+                    }
 
-                            Spacer()
+                    Spacer()
 
-                            // Range
-                            VStack(alignment: .trailing) {
-                                Text("Today's Range")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
+                    // Range
+                    VStack(alignment: .trailing) {
+                        Text("Today's Range")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
 
-                                Text(data.range)
-                                    .font(.title3.bold)
-                                    .foregroundStyle(.heartRate)
-                            }
+                        Text(data.range)
+                            .font(.title3.bold())
+                            .foregroundStyle(Color.heartRate)
+                    }
 
-                            if let resting = data.restingBPM {
-                                Spacer()
+                    if let resting = data.restingBPM {
+                        Spacer()
 
-                                VStack(alignment: .trailing) {
-                                    Text("Resting")
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
+                        VStack(alignment: .trailing) {
+                            Text("Resting")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
 
-                                    Text("\(Int(resting)) BPM")
-                                        .font(.title3.bold)
-                                        .foregroundStyle(.heartRate)
-                                }
-                            }
+                            Text("\(Int(resting)) BPM")
+                                .font(.title3.bold())
+                                .foregroundStyle(Color.heartRate)
                         }
                     }
                 }
             }
-            .onAppear {
-                withAnimation(.easeOut(duration: 0.6).delay(0.1)) {
-                    animateContent = true
-                    currentBPM = data.currentBPM
-                }
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.6).delay(0.1)) {
+                animateContent = true
+                currentBPM = data.currentBPM
             }
+        }
     }
 }
 
@@ -84,46 +78,36 @@ struct HeartRateGraphView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            Path(
-                (graphPath(for: geometry.size.width)
-                    .stroke(Color.red, style: StrokeStyle(lineWidth: 2))
-            )
+            graphPath(for: geometry.size)
+                .stroke(Color.red, style: StrokeStyle(lineWidth: 2))
         }
         .frame(height: 100)
     }
 
-    private func graphPath(for width: CGFloat) -> Path {
+    private func graphPath(for size: CGSize) -> Path {
         guard !samples.isEmpty else {
             return Path()
         }
 
-        let points = samples.enumerated().map { sample in
+        let minHeight: CGFloat = 40
+        let maxHeight: CGFloat = 160
+        let bpmRange = maxHeight - minHeight
+
+        let points = samples.enumerated().map { index, sample in
             CGPoint(
-                x: width * CGFloat(sample.date.timeIntervalSince1970) / 86400,
-                y: 100 - CGFloat(sample.bpm)
+                x: size.width * CGFloat(index) / CGFloat(max(samples.count - 1, 1)),
+                y: size.height - (CGFloat(sample.bpm - minHeight) / bpmRange) * size.height
             )
         }
 
         var path = Path()
-        var previousPoint: CGPoint?
+        guard let firstPoint = points.first else { return path }
+        path.move(to: firstPoint)
 
-        for point in points {
-            if let prev = previousPoint {
-                path = path.cgPath.move(to: prev)
-                path = path.cgPath.addLine(to: point)
-            }
-            previousPoint = point
+        for point in points.dropFirst() {
+            path.addLine(to: point)
         }
 
         return path
     }
-}
-
-// MARK: - Color Extensions
-
-extension Color {
-    static let sleep = Color(red: 0.5, green: 0.3, blue: 0.9)
-    static let heartRate = Color(red: 0.95, green: 0.3, blue: 0.4)
-    static let steps = Color(red: 0.2, green: 0.85, blue: 0.4)
-    static let activeEnergy = Color(red: 1.0, green: 0.6, blue: 0.2)
 }

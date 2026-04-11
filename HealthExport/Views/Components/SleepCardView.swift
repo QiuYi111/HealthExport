@@ -23,27 +23,27 @@ struct SleepCard: View {
                     // Main duration display
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(data.formattedDuration)
-                            .font(.system(size: 48, weight: .bold)
-                            .foregroundStyle(.sleep)
+                            .font(.system(size: 48, weight: .bold))
+                            .foregroundStyle(Color.sleep)
 
                         Spacer()
 
                         Text("hours")
-                            .font(.caption1)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                     }
 
                     // Time range
-                    if let startTime = formattedTime(data.startDate),
-                        let endTime = formattedTime(data.endDate) {
-                        HStack(spacing: 4) {
+                    let startTime = formattedTime(data.startDate)
+                    let endTime = formattedTime(data.endDate)
+                    HStack(spacing: 4) {
                         Image(systemName: "moonrise")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                         Text(startTime)
                             .font(.subheadline)
 
-                        Text(" -")
+                        Text(" - ")
 
                         Text(endTime)
                             .font(.subheadline)
@@ -55,36 +55,46 @@ struct SleepCard: View {
                     if data.stages.isEmpty {
                         HStack {
                             Text("No stage data")
-                                .font(.caption1)
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                         .padding(.bottom, 8)
                     } else {
-                        HStack(spacing: 8) {
-                            SleepStagePill(type: .deep, duration: data.stages.filter { $0.type == .deep }.count * 1, duration: $ \(Int($0.duration / 60))m", percentage: 20)
-                            SleepStagePill(type: .rem, duration: data.stages.filter { $0.type == .rem }.count * 1, duration: { \(Int($0.duration / 60))m", percentage: 20)
-                            SleepStagePill(type: .core, duration: data.stages.filter { $0.type == .core }.count * 1, duration: { \(Int($0.duration / 60))m", percentage: 20)
-                            SleepStagePill(type: .awake, duration: data.stages.filter { $0.type == .awake }.count * 1, duration: { \(Int($0.duration / 60))m", percentage: 20)
+                        VStack(spacing: 6) {
+                            ForEach(SleepStageType.allCases, id: \.self) { stageType in
+                                let stageDuration = totalDuration(for: stageType)
+                                let percentage = data.totalDuration > 0
+                                    ? Int(stageDuration / data.totalDuration * 100)
+                                    : 0
+                                SleepStagePill(
+                                    type: stageType,
+                                    duration: Int(stageDuration / 60),
+                                    percentage: percentage
+                                )
+                            }
                         }
                         .padding(.bottom, 12)
                     }
                 }
-                .onAppear {
-                    withAnimation(.easeOut(duration: 0.5).delay(0.2)) {
-                    animateContent = true
-                }
             }
-            .navigationDestination(SleepDetailView.self) {
-                SleepDetailView(sleepData: data)
-            }
-        )
+        }
         .buttonStyle(.plain)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.5).delay(0.2)) {
+                animateContent = true
+            }
+        }
     }
 
-    private func formattedTime(_ date: String {
+    private func formattedTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "h:mm a"
         return formatter.string(from: date)
     }
-}
 
+    private func totalDuration(for stageType: SleepStageType) -> TimeInterval {
+        data.stages
+            .filter { $0.type == stageType }
+            .reduce(0) { $0 + $1.duration }
+    }
+}

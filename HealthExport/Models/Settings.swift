@@ -1,57 +1,65 @@
 import Foundation
+import SwiftUI
 
-struct Settings {
-    var serverEndpoint: String
-    var syncEnabled: Bool
-    var syncSleep: Bool
-    var syncHeartRate: Bool
-    var syncSteps: Bool
-    var syncActiveEnergy: Bool
-    var autoSync: Bool
+// MARK: - Settings Model
 
-    static let `default` = Settings(
-        serverEndpoint: "",
-        syncEnabled: false,
-        syncSleep: true,
-        syncHeartRate: true,
-        syncSteps: true,
-        syncActiveEnergy: true,
-        autoSync: false
-    )
+struct AppSettings: Codable {
+    var syncSleep: Bool = true
+    var syncHeartRate: Bool = true
+    var syncSteps: Bool = true
+    var syncActiveEnergy: Bool = true
+    var syncBloodOxygen: Bool = true
+    var syncRespiratoryRate: Bool = true
+    var syncWristTemperature: Bool = true
+    var syncExerciseTime: Bool = true
+    var syncDistance: Bool = true
+    var syncRestingHeartRate: Bool = true
+    var syncWalkingHeartRateAverage: Bool = true
+    var syncHeartRateVariability: Bool = true
+    var syncStandMinutes: Bool = true
+
+    var autoSyncEnabled: Bool = false
+    var autoSyncInterval: Int = 30 // minutes
+    var lastSyncDate: Date?
+
+    /// Security-scoped bookmark data for user-chosen export directory
+    var exportDirectoryBookmark: Data?
+
+    // MARK: - Webhook Settings
+    var webhookEnabled: Bool = false
+    var webhookURL: String?
+    var webhookSyncInterval: Int = 30 // minutes
+    var lastWebhookSuccessDate: Date?
 }
 
+// MARK: - Settings Manager
+
 class SettingsManager: ObservableObject {
-    @Published var settings: Settings {
+    @Published var settings: AppSettings {
         didSet {
-            save()
+            saveSettings()
         }
     }
 
-    private let userDefaults = UserDefaults.standard
-    private let settingsKey = "healthExportSettings"
+    private let defaults = UserDefaults.standard
+    private let settingsKey = "app_settings"
 
     init() {
-        self.settings = load() ?? .default
-    }
-
-    private func load() -> Settings? {
-        guard let data = userDefaults.data(forKey: settingsKey),
-              let decoded = try? JSONDecoder().decode(Settings.self, from: data) else {
-            return nil
+        if let data = UserDefaults.standard.data(forKey: settingsKey),
+           let decoded = try? JSONDecoder().decode(AppSettings.self, from: data) {
+            settings = decoded
+        } else {
+            settings = AppSettings()
         }
-        return decoded
-    }
-
-    private func save() {
-        guard let encoded = try? JSONEncoder().encode(settings) else { return }
-        userDefaults.set(encoded, forKey: settingsKey)
     }
 
     func reset() {
-        settings = .default
+        settings = AppSettings()
+    }
+
+    private func saveSettings() {
+        if let encoded = try? JSONEncoder().encode(settings) {
+            defaults.set(encoded, forKey: settingsKey)
+        }
     }
 }
-
-// MARK: - Codable Conformance
-
-extension Settings: Codable {}

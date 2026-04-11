@@ -10,11 +10,10 @@
 		142BD087E9075309D590BA8B /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D36986C87B85C78982EAD6DF /* ExportService.swift */; };
 		21C54071996F8B1E6D214B5C /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEAA4FE9EDFEE5F45DD65F54 /* SettingsView.swift */; };
 		21C9FC49ACBC5E833D1E42E1 /* StepsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C319C6C1B610A80B459B6CC9 /* StepsCard.swift */; };
-		5645971FE16FA9C16FA4867C /* SleepViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83EAB23034E4610DF095D74E /* SleepViewModel.swift */; };
+		5D89CB53BDFEF98F0D6C4E32 /* WebhookService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1BB41F61F3BA0E43ACC905 /* WebhookService.swift */; };
 		62D512C8AEA47D9E82870759 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C340595763FF881C3D2A868 /* ContentView.swift */; };
 		74D1216594BD1E43CD4C5137 /* HealthExportApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB35BA7B0236028E82425692 /* HealthExportApp.swift */; };
 		756AF2ECC214365F382A464C /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF66BE4F760621B3FDC504E /* DashboardView.swift */; };
-		835B9852D2CB8824B742FE18 /* DashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDEF5E26C2C2D8512CCCF17F /* DashboardViewModel.swift */; };
 		9EA2075B1336456F29264B32 /* SleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 124E90DC72ECA9CFE5595DD7 /* SleepDetailView.swift */; };
 		BB756CDC04F5B08AB98C60BF /* Color+Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92846C4DDDAB655DFBE9A60D /* Color+Theme.swift */; };
 		C157AA8884742B5508071651 /* HealthData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12A8B89865F9468F01FA504F /* HealthData.swift */; };
@@ -34,20 +33,19 @@
 		178C50FF253107D7A1837474 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		26B040762606847561E85E72 /* CardComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardComponents.swift; sourceTree = "<group>"; };
 		33F7E24437B039D79AB139C2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		6A668CD73F169E36E6E76CE5 /* HealthExport.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HealthExport.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A668CD73F169E36E6E76CE5 /* HealthExport.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HealthExport.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C340595763FF881C3D2A868 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		83B3DD02707A2C942D349CB0 /* HealthExport.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HealthExport.entitlements; sourceTree = "<group>"; };
-		83EAB23034E4610DF095D74E /* SleepViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepViewModel.swift; sourceTree = "<group>"; };
 		8BCEC5DE3810B10DF18974F9 /* SleepStagePill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepStagePill.swift; sourceTree = "<group>"; };
 		92846C4DDDAB655DFBE9A60D /* Color+Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Theme.swift"; sourceTree = "<group>"; };
 		9F26B7BB3E222F81FCE827B5 /* SleepCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepCardView.swift; sourceTree = "<group>"; };
 		AAF66BE4F760621B3FDC504E /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		AC1BB41F61F3BA0E43ACC905 /* WebhookService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookService.swift; sourceTree = "<group>"; };
 		C319C6C1B610A80B459B6CC9 /* StepsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepsCard.swift; sourceTree = "<group>"; };
 		D06BD3EC6EDCFC758E916EAD /* HeartRateCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateCard.swift; sourceTree = "<group>"; };
 		D36986C87B85C78982EAD6DF /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
 		DA227292DA41F69F1CBBDEF5 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		DB35BA7B0236028E82425692 /* HealthExportApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthExportApp.swift; sourceTree = "<group>"; };
-		EDEF5E26C2C2D8512CCCF17F /* DashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardViewModel.swift; sourceTree = "<group>"; };
 		EEAA4FE9EDFEE5F45DD65F54 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -91,7 +89,6 @@
 				21D6E6677CD239D9C7824690 /* Models */,
 				CE624E44E1EEBAB5A92B28F6 /* Resources */,
 				E8B818C87F3D03A77F75B4D0 /* Services */,
-				B09265A7A171F93028BECB30 /* ViewModels */,
 				84F61E0E3C4F6D420DE275AD /* Views */,
 			);
 			path = HealthExport;
@@ -107,15 +104,6 @@
 				C319C6C1B610A80B459B6CC9 /* StepsCard.swift */,
 			);
 			path = Components;
-			sourceTree = "<group>";
-		};
-		B09265A7A171F93028BECB30 /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				EDEF5E26C2C2D8512CCCF17F /* DashboardViewModel.swift */,
-				83EAB23034E4610DF095D74E /* SleepViewModel.swift */,
-			);
-			path = ViewModels;
 			sourceTree = "<group>";
 		};
 		CE624E44E1EEBAB5A92B28F6 /* Resources */ = {
@@ -147,6 +135,7 @@
 			children = (
 				D36986C87B85C78982EAD6DF /* ExportService.swift */,
 				160F2BD25FC3E1DA05C3765B /* HealthKitService.swift */,
+				AC1BB41F61F3BA0E43ACC905 /* WebhookService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -180,11 +169,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
-				TargetAttributes = {
-					2E31824D84C8614C4F5E8162 = {
-						DevelopmentTeam = "";
-					};
-				};
 			};
 			buildConfigurationList = 3E0FBAE3A90B4EFF2BBFE58E /* Build configuration list for PBXProject "HealthExport" */;
 			developmentRegion = en;
@@ -225,7 +209,6 @@
 				BB756CDC04F5B08AB98C60BF /* Color+Theme.swift in Sources */,
 				62D512C8AEA47D9E82870759 /* ContentView.swift in Sources */,
 				756AF2ECC214365F382A464C /* DashboardView.swift in Sources */,
-				835B9852D2CB8824B742FE18 /* DashboardViewModel.swift in Sources */,
 				142BD087E9075309D590BA8B /* ExportService.swift in Sources */,
 				C157AA8884742B5508071651 /* HealthData.swift in Sources */,
 				74D1216594BD1E43CD4C5137 /* HealthExportApp.swift in Sources */,
@@ -236,8 +219,8 @@
 				D0F1FEEA9F6106A30ECE9D3C /* SleepCardView.swift in Sources */,
 				9EA2075B1336456F29264B32 /* SleepDetailView.swift in Sources */,
 				D5E1D5DE2D85367CBA1180E7 /* SleepStagePill.swift in Sources */,
-				5645971FE16FA9C16FA4867C /* SleepViewModel.swift in Sources */,
 				21C9FC49ACBC5E833D1E42E1 /* StepsCard.swift in Sources */,
+				5D89CB53BDFEF98F0D6C4E32 /* WebhookService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -250,6 +233,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = HealthExport/HealthExport.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 7LBRP4Q6B5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = HealthExport/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -297,7 +281,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8W29QFY8Z2;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -362,7 +346,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 8W29QFY8Z2;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -391,6 +375,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = HealthExport/HealthExport.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 7LBRP4Q6B5;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = HealthExport/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
