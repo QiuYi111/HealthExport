@@ -17,7 +17,6 @@ API:
 import argparse
 import json
 import os
-import sys
 import logging
 from datetime import datetime, timezone
 from http.server import HTTPServer, BaseHTTPRequestHandler
