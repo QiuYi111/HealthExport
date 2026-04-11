@@ -14,6 +14,7 @@ struct SettingsView: View {
     @State private var exportMessage = ""
     @State private var isExporting = false
     @State private var isTestingWebhook = false
+    @State private var isSendingWebhook = false
     @State private var isRetryingQueue = false
 
     var body: some View {
@@ -91,6 +92,17 @@ struct SettingsView: View {
                                 ProgressView()
                             } else {
                                 Label("Test Webhook", systemImage: "antenna.radiowaves.left.and.right")
+                            }
+                        }
+                        .disabled(settingsManager.settings.webhookURL == nil || settingsManager.settings.webhookURL!.isEmpty)
+
+                        Button {
+                            Task { await sendWebhookNow() }
+                        } label: {
+                            if isSendingWebhook {
+                                ProgressView()
+                            } else {
+                                Label("Send Now", systemImage: "paperplane.fill")
                             }
                         }
                         .disabled(settingsManager.settings.webhookURL == nil || settingsManager.settings.webhookURL!.isEmpty)
@@ -275,6 +287,28 @@ struct SettingsView: View {
         }
         showingSuccessAlert = true
         isTestingWebhook = false
+    }
+
+    private func sendWebhookNow() async {
+        isSendingWebhook = true
+        do {
+            let healthData = try await healthKitService.fetchAllData()
+            let payload = ExportPayload(
+                deviceId: ExportPayload.deviceId,
+                timestamp: Date(),
+                data: healthData
+            )
+            await WebhookService.shared.send(payload)
+            if WebhookService.shared.pendingCount == 0 {
+                exportMessage = "Webhook sent successfully!"
+            } else {
+                exportMessage = "Webhook send failed — queued for retry"
+            }
+        } catch {
+            exportMessage = "Failed to fetch health data: \(error.localizedDescription)"
+        }
+        showingSuccessAlert = true
+        isSendingWebhook = false
     }
 
     private func retryQueue() async {
