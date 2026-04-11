@@ -23,11 +23,17 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: List available simulators
+        run: xcrun simctl list devices available | grep -i iphone | head -5
+
       - name: Build
         run: |
+          # Find the first available iPhone simulator runtime
+          SIMULATOR=$(xcrun simctl list devices available | grep -oE 'iPhone [0-9A-Za-z ]+' | head -1 | xargs)
+          echo "Using simulator: $SIMULATOR"
           xcodebuild build \
             -scheme HealthExport \
-            -destination 'platform=iOS Simulator,name=Any iOS Simulator Device' \
+            -destination "platform=iOS Simulator,name=${SIMULATOR}" \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \

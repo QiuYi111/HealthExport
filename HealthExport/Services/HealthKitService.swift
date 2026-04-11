@@ -11,6 +11,8 @@ class HealthKitService: ObservableObject {
 
     private var observerQueries: [HKObserverQuery] = []
     private let autoExportQueue = DispatchQueue(label: "com.healthexport.autoexport")
+    private var lastObserverExportTime: Date?
+    private let observerExportThrottleInterval: TimeInterval = 300 // 5 minutes
 
     // MARK: - Types to Read
 
@@ -140,11 +142,18 @@ class HealthKitService: ObservableObject {
 
     private func handleDataUpdate(typeIdentifier: HKQuantityTypeIdentifier?) {
         autoExportQueue.async {
+            // Throttle: skip if exported recently (within 5 minutes)
+            if let lastTime = self.lastObserverExportTime,
+               Date().timeIntervalSince(lastTime) < self.observerExportThrottleInterval {
+                return
+            }
+
             Task {
                 do {
                     let url = try await self.fetchAndAutoExport()
                     DispatchQueue.main.async {
                         self.lastAutoExportDate = Date()
+                        self.lastObserverExportTime = Date()
                         if let url = url {
                             print("Auto-exported: \(url.lastPathComponent)")
                         }
