@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import BackgroundTasks
 
 struct SettingsView: View {
     @EnvironmentObject private var settingsManager: SettingsManager
@@ -234,6 +235,18 @@ struct SettingsView: View {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text(exportMessage)
+            }
+            .onChange(of: settingsManager.settings.webhookEnabled) { enabled in
+                if enabled {
+                    // Schedule background refresh when webhook is enabled
+                    let interval = Double(settingsManager.settings.webhookSyncInterval)
+                    let request = BGAppRefreshTaskRequest(identifier: "com.healthexport.webhook.refresh")
+                    request.earliestBeginDate = Date(timeIntervalSinceNow: interval * 60)
+                    try? BGTaskScheduler.shared.submit(request)
+                } else {
+                    // Cancel pending background refresh when webhook is disabled
+                    BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: "com.healthexport.webhook.refresh")
+                }
             }
         }
     }
